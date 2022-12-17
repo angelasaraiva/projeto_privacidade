@@ -1,0 +1,11 @@
+grant codeBase "file:bin/*" {
+
+	permission java.security.AllPermission; 
+	permission java.net.SocketPermission "*:23456", "listen";
+	permission java.net.SocketPermission "*:1024-", "accept";
+	permission java.io.FilePermission "passwords.txt", "read,write";
+	permission java.io.FilePermission "./user_directories/data/-", "read,write";
+	permission java.util.PropertyPermission "user.dir", "read";
+	permission java.io.FilePermission "keystore.server", "read, write";
+	
+};

@@ -1,0 +1,6 @@
+grant codeBase "file:bin/*" {
+
+	permission java.io.FilePermission "/jars/-", "read, write";
+	permission java.io.FilePermission "keystore.server", "read, write";
+	
+};

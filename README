@@ -1,0 +1,3 @@
+Para começar, se não existir keystore tem de ser criada com o comando
+"keytool -genkeypair -keysize 2048 -alias server -keyalg rsa -keystore keystore.server -storetype JKS"
+Depois executar o servidor, inserir a palavra-passe do admin e depois executar o cliente com o comando pretendido.
