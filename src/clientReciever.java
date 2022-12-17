@@ -34,7 +34,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
 public class clientReciever {
-	private static Map<String, String> availableClients;
+	private static Map<String, List> availableClients;
 	private static Socket socket;
 
 	public static void main(String[] args) throws Exception, IOException {
@@ -44,39 +44,35 @@ public class clientReciever {
 		String[] clientAddress = args[2].split(":");
 		String address = clientAddress[0];
 		int port = Integer.parseInt(clientAddress[1]);
-
-		System.setProperty("javax.net.ssl.trustStore", "keystore.server");
-		System.setProperty("javax.net.ssl.trustStorePassword", "ninis1234");
-
-		SocketFactory sf = SSLSocketFactory.getDefault( );
-		Socket socket = sf.createSocket(address, 23456);
+		
+		Socket serverSocket = new Socket(address, 23456);
 
 		ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
 		ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
 		
-		System.out.println(port);
+		//System.out.println(port);
+		
+		add(userId, password, inStream, outStream, port);
 		
 		ServerSocket sSoc = null;
 		try {
-			ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
-			sSoc = ssf.createServerSocket(port);
+			sSoc = new ServerSocket(port);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		socket.close();
 		
 		//add(userId, password, inStream, outStream);
 
 		while(true) {
 			
+			System.out.println("Waiting");
 			socket = sSoc.accept();
 			
 			try {
 				ObjectInputStream inStream2 = new ObjectInputStream(socket.getInputStream());
 				ObjectOutputStream outStream2 = new ObjectOutputStream(socket.getOutputStream());
 				receivesFile(String.valueOf(userId), password, inStream2, outStream2);
-				System.out.println("aaaaa");
+				//System.out.println("aaaaa");
 			} catch (Exception e) {
 				//e.printStackTrace();
 			}
@@ -87,7 +83,7 @@ public class clientReciever {
 		}
 	}
 
-	private static void add(int userId, String password, ObjectInputStream inStream, ObjectOutputStream outStream) throws Exception {
+	private static void add(int userId, String password, ObjectInputStream inStream, ObjectOutputStream outStream, int port) throws Exception {
 		File kfile = new File("keystore." + userId);  //keystore
 		if(!kfile.isFile()) { 
 			System.out.println("aaaaaa");
@@ -95,7 +91,9 @@ public class clientReciever {
 		} 
 
 		outStream.writeObject(String.valueOf(userId)); //nome
-		availableClients = (HashMap<String, String>) inStream.readObject();
+		outStream.writeObject(port);
+		availableClients = (HashMap<String, List>) inStream.readObject();
+		System.out.println(availableClients);
 	}
 
 	private static void receivesFile(String userId, String password, ObjectInputStream inStream2, ObjectOutputStream outStream2) throws IOException, Exception {
@@ -147,18 +145,8 @@ public class clientReciever {
 		cAES.init(Cipher.DECRYPT_MODE, keyAES);
 
 		//DECRYPT FILE WITH AES KEY
-		FileInputStream fileFIS = new FileInputStream("./user_directories/data/" + userId + ".cif");
-		CipherOutputStream fileCOS = new CipherOutputStream(outStream2, cAES);
-		byte[] array2 = new byte[1024];
-		//outStream2.writeObject(temp); //sends file size
-		int x1 = 0;
-		while((x1 = fileFIS.read(array2, 0, 1024)) > 0) {
-			fileCOS.write(array2, 0, x1);
-			fileCOS.flush();
-		}
-		System.out.println("Message sent to client of id: " + userId);
-		fileFIS.close();
-		fileCOS.close();
+		byte[] array2 = (byte[]) inStream2.readObject();
+		cAES.doFinal(array2);
 
 		// Hash para testar a integridade
 

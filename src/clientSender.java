@@ -34,7 +34,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
 public class clientSender {
-	private static Map<String, String> availableClients;
+	private static Map<String, List> availableClients;
 	private static Socket socket;
 
 	public static void main(String[] args) throws Exception, IOException {
@@ -45,21 +45,15 @@ public class clientSender {
 		String[] clientAddress = args[2].split(":");
 		String address = clientAddress[0];
 		int port = Integer.parseInt(clientAddress[1]);
-
-		int serverPort = Integer.parseInt(args[3]);
-
-		System.setProperty("javax.net.ssl.trustStore", "keystore.server");
-		System.setProperty("javax.net.ssl.trustStorePassword", "ninis1234");
-
-		SocketFactory sf = SSLSocketFactory.getDefault();
-		Socket socket = sf.createSocket(address, serverPort);
+		
+		Socket socket = new Socket(address, 23456);
 
 		ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
 		ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
 
 		System.out.println(port);
 
-		add(userId, password, inStream, outStream);
+		add(userId, password, inStream, outStream, port);
 
 		Scanner myObj = new Scanner(System.in);
 		System.out.println("Say what you wanna do (send <receiverName>): ");
@@ -70,7 +64,7 @@ public class clientSender {
 			System.out.println(nameReceiver);
 			System.out.println("bbbbbb");
 
-			sendFileMessage(userId, password, nameReceiver, inStream, outStream, sf);
+			sendFileMessage(userId, password, nameReceiver);
 		}
 
 		outStream.close();
@@ -78,20 +72,22 @@ public class clientSender {
 		socket.close();
 	}
 
-	private static void add(int userId, String password, ObjectInputStream inStream, ObjectOutputStream outStream)
+	private static void add(int userId, String password, ObjectInputStream inStream, ObjectOutputStream outStream, int port)
 			throws Exception {
-		File kfile = new File("keystore." + userId); // keystore
-		if (!kfile.isFile()) {
+		
+		File kfile = new File("keystore." + userId);  //keystore
+		if(!kfile.isFile()) { 
 			System.out.println("aaaaaa");
-			Cifra.main(String.valueOf(userId), password);
-		}
+			Cifra.main(String.valueOf(userId), password);					
+		} 
 
-		outStream.writeObject(String.valueOf(userId)); // nome
-		availableClients = (HashMap<String, String>) inStream.readObject();
+		outStream.writeObject(String.valueOf(userId)); //nome
+		outStream.writeObject(port);
+		availableClients = (HashMap<String, List>) inStream.readObject();
+		System.out.println(availableClients);
 	}
 
-	private static void sendFileMessage(int userId, String password, String nameReceiver, ObjectInputStream inStream,
-			ObjectOutputStream outStream, SocketFactory sf) throws Exception { // SEND FILES
+	private static void sendFileMessage(int userId, String password, String nameReceiver) throws Exception { // SEND FILES
 
 		// connection between client and server
 		System.out.println("aaaaaa");
@@ -114,15 +110,20 @@ public class clientSender {
 		// Map<String, String> availableClients = (HashMap<String, String>)
 		// inStream.readObject();
 
-		String clientSocket = null;
+		String clientAddress = null;
+		String clientPort = null;
 		// choose a client to chat
 		if (availableClients.get(nameReceiver) != null) {
-			clientSocket = availableClients.get(nameReceiver);
+			clientAddress = (String) availableClients.get(nameReceiver).get(0);
+			clientPort = (String) availableClients.get(nameReceiver).get(1);
 		} else {
 			System.out.println("This user doesn't exist.");
 		}
-
-		Socket newSocket = sf.createSocket(clientSocket, 34567);
+		System.out.println(availableClients);
+		System.out.println(clientAddress);
+		System.out.println(clientPort);
+		
+		Socket newSocket = new Socket(clientAddress, Integer.valueOf(clientPort));
 
 		// Socket newSocket = sf.createSocket(clientSocket.getInetAddress(),
 		// clientSocket.getPort());
@@ -168,18 +169,10 @@ public class clientSender {
 		// CIPHER FILE WITH AES KEY
 		Cipher cAES = Cipher.getInstance("AES");
 		cAES.init(Cipher.ENCRYPT_MODE, key);
-		FileOutputStream newServerFileFOS = new FileOutputStream("./user_directories/data/" + userId + ".cif");
-		CipherOutputStream newServerFileCOS = new CipherOutputStream(newServerFileFOS, cAES);
-		byte[] array = new byte[1024];
-		int temp = message.getBytes().length; // SE DER MAL PODE SER ISTO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		int x = 0;
-		while (temp > 0) {
-			x = inStream.read(array, 0, temp > 1024 ? 1024 : temp);
-			newServerFileCOS.write(array, 0, x); // writes file data
-			temp -= x;
-		}
-		newServerFileCOS.close();
+		byte buf2[] = message.getBytes();
+		byte[] encryp_message = cAES.doFinal(buf2);
 		kfilein.close();
+		outStream2.writeObject(encryp_message);
 
 		// Encrypt the AES key with the public key of the receiver
 

@@ -73,7 +73,7 @@ public class myAutent {
 	
 	//private List names = new ArrayList();
 	//private List sockets = new ArrayList();
-	private Map<String, String> availableClients = new HashMap<String, String>();
+	private Map<String, List> availableClients = new HashMap<String, List>();
 
 	public static void main(String[] args) throws IOException, Exception, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
 		System.out.println("servidor: main");
@@ -84,10 +84,7 @@ public class myAutent {
 	public void startServer () throws Exception{
 		ServerSocket sSoc = null;
 		try {
-			System.setProperty("javax.net.ssl.keyStore", "keystore.server");
-			System.setProperty("javax.net.ssl.keyStorePassword", "ninis1234");
-			ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
-			sSoc = ssf.createServerSocket(23456);
+			sSoc = new ServerSocket(23456);
 
 		} catch (IOException e) {
 			System.err.println(e.getMessage());
@@ -120,9 +117,16 @@ public class myAutent {
 				ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
 				
 				String clientName = (String) inStream.readObject();
+				int port = (int) inStream.readObject();
 				System.out.println(clientName);
 
-				availableClients.put(clientName, String.valueOf(socket.getInetAddress()));
+				if(!availableClients.containsKey(clientName)) {
+					List<String> socketL = new ArrayList<String>();
+					socketL.add(String.valueOf(socket.getInetAddress()).substring(1));
+					socketL.add(String.valueOf(port));
+					
+					availableClients.put(clientName, socketL);
+				}
 				//names.add(clientName);
 				//sockets.add(socket.getInetAddress()); //address of socket
 				
